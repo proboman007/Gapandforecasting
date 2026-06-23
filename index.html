@@ -83,6 +83,12 @@
     </div>
 
     <script>
+        const mockData = {
+            Mathematics: { gap: "-15%", forecast: "+12%", rec: "Focus on Algebra and Calculus concepts." },
+            Physics: { gap: "-8%", forecast: "+5%", rec: "Strengthen thermodynamics and mechanics applications." },
+            English: { gap: "+5%", forecast: "+2%", rec: "Continue reading advanced literary critiques." }
+        };
+
         // API Connection Simulation
         document.getElementById('connectBtn').addEventListener('click', () => {
             const key = document.getElementById('apiKey').value;
@@ -93,69 +99,75 @@
                 statusIndicator.classList.replace('bg-red-500', 'bg-green-500');
                 statusText.innerText = "Connected (Gemini 2.5 Flash)";
             } else {
-                alert("Please enter a valid API Key to enable the 2.5 Flash model.");
+                alert("Please enter a valid API Key.");
             }
         });
 
-        // Chat & File Simulation
+        function updateDashboard(subject = null) {
+            const gapContainer = document.getElementById('gapContainer');
+            const forecastContainer = document.getElementById('forecastContainer');
+            const recText = document.getElementById('recommendationText');
+
+            const subjects = subject ? [subject] : Object.keys(mockData);
+            
+            let gapHtml = '<ul class="w-full space-y-3 p-4">';
+            subjects.forEach(sub => {
+                const color = mockData[sub].gap.includes('+') ? 'emerald' : 'red';
+                gapHtml += `<li class="flex justify-between items-center"><span class="font-medium text-slate-600">${sub}</span><span class="px-2 py-1 bg-${color}-100 text-${color}-700 rounded text-xs font-bold">${mockData[sub].gap} Gap</span></li>`;
+            });
+            gapHtml += '</ul>';
+
+            gapContainer.innerHTML = gapHtml;
+            forecastContainer.innerHTML = `
+                <div class="p-4 text-center">
+                    <p class="text-4xl font-black text-emerald-600">${subject ? mockData[subject].forecast : '+12%'}</p>
+                    <p class="text-sm text-slate-500 mt-2">Projected performance increase${subject ? ` in ${subject}` : ''}.</p>
+                </div>
+            `;
+            recText.innerText = subject ? mockData[subject].rec : "Overall strategy: Prioritize weak subjects identified in Mathematics and Physics.";
+        }
+
         document.getElementById('sendBtn').addEventListener('click', () => {
             const input = document.getElementById('chatInput');
             const chatWindow = document.getElementById('chatWindow');
-            if (input.value) {
-                const msg = document.createElement('p');
-                msg.className = "text-sm mt-2 text-slate-700";
-                msg.innerText = "You: " + input.value;
-                chatWindow.appendChild(msg);
+            const msgText = input.value.trim();
+
+            if (msgText) {
+                // User message
+                const userMsg = document.createElement('p');
+                userMsg.className = "text-sm mt-2 text-slate-700 font-medium";
+                userMsg.innerText = "You: " + msgText;
+                chatWindow.appendChild(userMsg);
+
+                // AI Response Logic
+                const botMsg = document.createElement('p');
+                botMsg.className = "text-sm mt-1 text-indigo-600";
+                
+                let found = false;
+                Object.keys(mockData).forEach(subject => {
+                    if (msgText.toLowerCase().includes(subject.toLowerCase())) {
+                        botMsg.innerText = `Gemini: Here is the analysis for ${subject}.`;
+                        updateDashboard(subject);
+                        found = true;
+                    }
+                });
+
+                if (!found) {
+                    botMsg.innerText = "Gemini: I analyzed your request. You can ask me about Mathematics, Physics, or English gaps.";
+                }
+
+                chatWindow.appendChild(botMsg);
                 input.value = '';
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             }
         });
 
-        // Analysis Simulation
-        function runAnalysis() {
-            const gapContainer = document.getElementById('gapContainer');
-            const forecastContainer = document.getElementById('forecastContainer');
-            const recText = document.getElementById('recommendationText');
-            
-            // Show loading state
-            gapContainer.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing documents with Gemini 2.5 Flash...</p>';
-            forecastContainer.innerHTML = '<p class="text-emerald-600 animate-pulse">Forecasting performance trends...</p>';
-
-            setTimeout(() => {
-                // Update Gap Analysis
-                gapContainer.innerHTML = `
-                    <ul class="w-full space-y-3 p-4">
-                        <li class="flex justify-between items-center"><span class="font-medium text-slate-600">Mathematics</span><span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold">-15% Gap</span></li>
-                        <li class="flex justify-between items-center"><span class="font-medium text-slate-600">Physics</span><span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">-8% Gap</span></li>
-                        <li class="flex justify-between items-center"><span class="font-medium text-slate-600">English</span><span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">+5% Surplus</span></li>
-                    </ul>
-                `;
-
-                // Update Forecast
-                forecastContainer.innerHTML = `
-                    <div class="p-4 text-center">
-                        <p class="text-4xl font-black text-emerald-600">+12%</p>
-                        <p class="text-sm text-slate-500 mt-2">Projected performance increase over the next term given targeted intervention in Mathematics.</p>
-                    </div>
-                `;
-
-                // Update Recommendations
-                recText.innerText = "Recommendation: Prioritize Algebra and Calculus foundation modules. Gemini identified a pattern of weak conceptual application in multi-step equations.";
-            }, 2000);
-        }
-
         // File handle
         document.getElementById('fileUpload').addEventListener('change', (e) => {
-            const files = e.target.files;
-            if (files.length > 0) {
+            if (e.target.files.length > 0) {
                 const chatWindow = document.getElementById('chatWindow');
-                const notice = document.createElement('p');
-                notice.className = "text-xs text-indigo-600 font-bold mt-2";
-                notice.innerText = `📎 Uploaded ${files.length} document(s). Starting analysis...`;
-                chatWindow.appendChild(notice);
-                
-                // Trigger the analysis
-                runAnalysis();
+                chatWindow.innerHTML += `<p class="text-xs text-indigo-600 font-bold mt-2">📎 Analyzing ${e.target.files.length} document(s)...</p>`;
+                updateDashboard();
             }
         });
     </script>
